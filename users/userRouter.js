@@ -4,6 +4,7 @@ const router = express.Router();
 // require db to use functions
 const userdb = require('./userDb');
 const postdb = require('../posts/postDb');
+const {validateUserId, validateUser, validatePost} = require('../validateUser')
 
 router.use("/:id", validateUserId);
 
@@ -13,7 +14,7 @@ router.post('/', validateUser, (req, res) => {
         .then(user => {
             res.status(201).json(user);
         })
-        .catch(next)
+        .catch( error => res.status(500).json({errorMessage: `Could not create a user`}))
 });
 
 router.post('/:id/posts', validatePost, (req, res) => {
@@ -24,7 +25,7 @@ router.post('/:id/posts', validatePost, (req, res) => {
       .then(user => {
           res.status(201).json(user);
       })
-      .catch(next)
+      .catch( error => res.status(500).json({errorMessage: `Error creating a post for user`}))
 });
 
 router.get('/', (req, res) => {
@@ -33,31 +34,31 @@ router.get('/', (req, res) => {
       .then(users => {
           res.status(200).json(users);
       })
-      .catch(next)
+      .catch( error => res.status(500).json({errorMessage: `Can not get users`}))
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', validateUserId, (req, res) => {
   // do your magic!
   res.status(200).json(req.user)
 });
 
-router.get('/:id/posts', (req, res) => {
+router.get('/:id/posts', validateUserId, (req, res) => {
   // do your magic!
   userdb.getUserPosts(req.params.id)
       .then(posts => {
           res.status(200).json(posts)
       })
-      .catch(next)
+      .catch( error => res.status(500).json({errorMessage: `Error retrieving posts of specified user`}))
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', validateUserId, (req, res) => {
   // do your magic!
   const id = req.params.id;
   userdb.remove(id)
       .then(user => {
           res.status(200).json({ message: "User was deleted.", user: req.user });
       })
-      .catch(next)
+      .catch( error => res.status(500).json({errorMessage: `Error deleting user.`}))
 });
 
 router.put('/:id', validateUser, (req, res) => {
@@ -68,49 +69,7 @@ router.put('/:id', validateUser, (req, res) => {
       .then(user => {
           res.status(200).json(user)
       })
-      .catch(next)
+      .catch( error => res.status(500).json({errorMessage: `User could not be updated.`}))
 });
-
-//custom middleware
-
-function validateUserId(req, res, next) {
-  // do your magic!
-  userdb.getById(req.params.id)
-      .then(user => {
-          if (user) {
-              req.user = user
-              next();
-          } else {
-              res.status(400).json({ message: "Invalid user id." });
-          }
-      })
-      .catch(next)
-}
-
-function validateUser(req, res, next) {
-  // do your magic!
-  if (req.body) {
-      if (req.body.name) {
-          next();
-      } else {
-          res.status(400).json({ message: "Missing required name field." })
-      }
-  } else {
-      res.status(400).json({ message: "Missing user data." });
-  }
-};
-
-function validatePost(req, res, next) {
-  // do your magic!
-  if (req.body) {
-      if (req.body.text) {
-          next();
-      } else {
-          res.status(400).json({ message: "Missing required text field." })
-      }
-  } else {
-      res.status(400).json({ message: "Missing post data." });
-  }
-}
 
 module.exports = router;
