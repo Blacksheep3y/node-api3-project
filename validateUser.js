@@ -1,4 +1,5 @@
 const userdb = require('./users/userDb');
+const postdb = require('./posts/postDb');
 
 // userRouter custom middleware
 function validateUserId(req, res, next) {
